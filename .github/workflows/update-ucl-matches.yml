@@ -1,0 +1,79 @@
+name: Update UCL Matches
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # כל 30 דקות
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch & Update UCL Matches
+        env:
+          FOOTBALL_KEY: ${{ secrets.FOOTBALL_KEY }}
+          SUPABASE_URL: ${{ secrets.UCL_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.UCL_SUPABASE_KEY }}
+        run: |
+          python3 << 'EOF'
+          import urllib.request, json, os, sys
+
+          FOOTBALL_KEY = os.environ['FOOTBALL_KEY']
+          SUPABASE_URL = os.environ['SUPABASE_URL']
+          SUPABASE_KEY = os.environ['SUPABASE_KEY']
+
+          # שליפת משחקי UCL (competition id = CL)
+          url = 'https://api.football-data.org/v4/competitions/CL/matches?season=2024'
+          req = urllib.request.Request(url, headers={'X-Auth-Token': FOOTBALL_KEY})
+          with urllib.request.urlopen(req) as r:
+              data = json.loads(r.read())
+
+          matches = data.get('matches', [])
+          print(f'Fetched {len(matches)} matches')
+
+          headers = {
+              'apikey': SUPABASE_KEY,
+              'Authorization': f'Bearer {SUPABASE_KEY}',
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates,return=minimal'
+          }
+
+          for m in matches:
+              stage = m.get('stage', '')
+              group = m.get('group') or None
+              score = m.get('score', {})
+              ft = score.get('fullTime', {})
+              home_score = ft.get('home')
+              away_score = ft.get('away')
+
+              # תיקון סטטוס
+              status = m.get('status', '')
+              if status == 'TIMED': status = 'SCHEDULED'
+
+              payload = {
+                  'match_id': m['id'],
+                  'utc_date': m['utcDate'],
+                  'status': status,
+                  'stage': stage,
+                  'group_name': group,
+                  'home_team': m['homeTeam']['name'],
+                  'home_tla': m['homeTeam'].get('tla'),
+                  'away_team': m['awayTeam']['name'],
+                  'away_tla': m['awayTeam'].get('tla'),
+                  'home_score': home_score,
+                  'away_score': away_score,
+              }
+
+              body = json.dumps([payload]).encode()
+              req = urllib.request.Request(
+                  f'{SUPABASE_URL}/rest/v1/matches',
+                  data=body, headers=headers, method='POST'
+              )
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      pass
+              except Exception as e:
+                  print(f'Error match {m["id"]}: {e}')
+
+          print('Done!')
+          EOF
