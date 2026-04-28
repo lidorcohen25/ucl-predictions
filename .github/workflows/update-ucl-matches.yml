@@ -22,14 +22,16 @@ jobs:
           SUPABASE_URL = os.environ['SUPABASE_URL'].strip()
           SUPABASE_KEY = os.environ['SUPABASE_KEY'].strip()
 
-          # שליפת משחקי UCL (competition id = CL)
-          url = 'https://api.football-data.org/v4/competitions/CL/matches?season=2024'
+          # שליפת משחקי UCL (competition id = CL) עונה 2025/26
+          url = 'https://api.football-data.org/v4/competitions/CL/matches?season=2025'
           req = urllib.request.Request(url, headers={'X-Auth-Token': FOOTBALL_KEY})
           with urllib.request.urlopen(req) as r:
               data = json.loads(r.read())
 
           matches = data.get('matches', [])
-          print(f'Fetched {len(matches)} matches')
+          # סנן רק חצי גמר וגמר
+          matches = [m for m in matches if m.get('stage') in ('SEMI_FINALS','FINAL')]
+          print(f'Fetched {len(matches)} matches (semi-finals + final)')
 
           headers = {
               'apikey': SUPABASE_KEY,
