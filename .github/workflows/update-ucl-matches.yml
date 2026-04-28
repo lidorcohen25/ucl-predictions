@@ -18,9 +18,9 @@ jobs:
           python3 << 'EOF'
           import urllib.request, json, os, sys
 
-          FOOTBALL_KEY = os.environ['FOOTBALL_KEY']
-          SUPABASE_URL = os.environ['SUPABASE_URL']
-          SUPABASE_KEY = os.environ['SUPABASE_KEY']
+          FOOTBALL_KEY = os.environ['FOOTBALL_KEY'].strip()
+          SUPABASE_URL = os.environ['SUPABASE_URL'].strip()
+          SUPABASE_KEY = os.environ['SUPABASE_KEY'].strip()
 
           # שליפת משחקי UCL (competition id = CL)
           url = 'https://api.football-data.org/v4/competitions/CL/matches?season=2024'
