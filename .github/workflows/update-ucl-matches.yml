@@ -2,7 +2,7 @@ name: Update UCL Matches
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # כל 30 דקות
+    - cron: '*/5 * * * *'  # כל 5 דקות
   workflow_dispatch:
 
 jobs:
