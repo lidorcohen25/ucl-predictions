@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>אתה מבין בכלל? 🏆</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0d1f0d;--bg2:#0a1a0a;--card:#142414;--card2:#1a2e1a;--border:#1e3a1e;
+  --green:#4ade80;--green2:#22c55e;--gold:#fbbf24;--red:#f43f5e;
+  --blue:#38bdf8;--text:#f0fdf4;--muted:#166534;--muted2:#86efac;--vs:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Heebo',sans-serif;background:var(--bg2);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 100% 50% at 50% 0%,rgba(74,222,128,.08),transparent 60%),
+  repeating-linear-gradient(0deg,transparent,transparent 80px,rgba(74,222,128,.015) 80px,rgba(74,222,128,.015) 81px);
+  pointer-events:none;z-index:0}
+.screen{display:none;min-height:100vh;position:relative;z-index:1}
+.screen.active{display:block}
+#screen-auth{display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-box{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:32px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.auth-logo{text-align:center;margin-bottom:24px}
+.auth-logo .ball{font-size:52px;display:block;animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-8px) rotate(10deg)}}
+.auth-logo h1{font-size:2rem;font-weight:900;color:var(--green);text-shadow:0 0 30px rgba(74,222,128,.4);margin-top:8px}
+.auth-logo p{font-size:.8rem;color:var(--muted2);margin-top:4px}
+.auth-tabs{display:flex;background:var(--bg2);border-radius:14px;padding:3px;margin-bottom:20px}
+.auth-tab{flex:1;text-align:center;padding:10px;border-radius:12px;font-weight:700;font-size:.9rem;cursor:pointer;color:var(--muted2);transition:all .2s}
+.auth-tab.active{background:var(--green2);color:#0a1a0a}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.75rem;font-weight:700;color:var(--muted2);margin-bottom:5px}
+.field input{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:'Heebo',sans-serif;font-size:.95rem;outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(74,222,128,.1)}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--green2),#16a34a);color:#0a1a0a;border:none;border-radius:100px;font-family:'Heebo',sans-serif;font-weight:900;font-size:1rem;padding:13px;cursor:pointer;transition:all .2s;margin-top:4px;box-shadow:0 4px 20px rgba(34,197,94,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(34,197,94,.45)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.auth-err{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);border-radius:10px;padding:9px 12px;font-size:.8rem;color:var(--red);margin-bottom:12px;display:none}
+header{text-align:center;padding:24px 16px 12px;position:relative;z-index:1}
+.header-ball{font-size:56px;display:block;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(74,222,128,.5))}
+header h1{font-size:clamp(2.2rem,7vw,3.5rem);font-weight:900;line-height:1;margin-top:8px;color:var(--green);text-shadow:0 0 40px rgba(74,222,128,.4)}
+header .subtitle{font-size:.8rem;color:var(--muted2);margin-top:4px}
+.user-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px}
+.user-chip{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:100px;padding:6px 14px;font-size:.82rem;font-weight:700;color:var(--green);display:flex;align-items:center;gap:6px}
+.logout-btn{background:none;border:1px solid var(--border);color:var(--muted2);border-radius:100px;padding:6px 12px;font-size:.75rem;cursor:pointer;font-family:'Heebo',sans-serif;transition:all .2s}
+.logout-btn:hover{border-color:var(--red);color:var(--red)}
+.tabs-wrap{max-width:640px;margin:14px auto 0;padding:0 12px;position:relative;z-index:1}
+.tabs-row{display:grid;gap:6px;margin-bottom:6px}
+.tabs-row:first-child{grid-template-columns:repeat(4,1fr)}
+.tabs-row:last-child{grid-template-columns:repeat(3,1fr)}
+.tab{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:10px 4px;text-align:center;font-weight:700;font-size:.76rem;cursor:pointer;color:var(--muted2);transition:all .2s;white-space:nowrap}
+.tab:hover{border-color:var(--green2);color:var(--green)}
+.tab.active{background:linear-gradient(135deg,var(--green2),#16a34a);border-color:transparent;color:#0a1a0a;box-shadow:0 4px 16px rgba(34,197,94,.4)}
+.panel{display:none;max-width:640px;margin:0 auto;padding:12px 12px 80px;position:relative;z-index:1}
+.panel.active{display:block}
+.stage-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.stage-btn{background:var(--card);border:1.5px solid var(--border);color:var(--muted2);padding:7px 14px;border-radius:100px;font-size:.76rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap}
+.stage-btn.active{background:linear-gradient(135deg,#1e3a1e,#14281a);border-color:var(--green2);color:var(--green)}
+.stage-btn .count{display:inline-flex;align-items:center;justify-content:center;background:var(--green2);color:#0a1a0a;border-radius:100px;font-size:.62rem;font-weight:900;min-width:18px;height:18px;padding:0 5px;margin-right:4px}
+.match-card{background:linear-gradient(135deg,var(--card),var(--card2));border:1.5px solid var(--border);border-radius:20px;margin-bottom:12px;overflow:hidden;transition:all .2s;box-shadow:0 4px 20px rgba(0,0,0,.3);position:relative}
+.match-card:hover{border-color:rgba(74,222,128,.3);transform:translateY(-1px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.match-card.live{border-color:var(--red);box-shadow:0 0 20px rgba(244,63,94,.2)}
+.match-card.finished{border-color:rgba(74,222,128,.2)}
+.result-ribbon{position:absolute;top:-1px;left:50%;transform:translateX(-50%);padding:4px 16px;border-radius:0 0 14px 14px;font-size:.72rem;font-weight:900;z-index:2;white-space:nowrap}
+.result-ribbon.exact{background:linear-gradient(135deg,var(--green2),#16a34a);color:#0a1a0a}
+.result-ribbon.correct{background:linear-gradient(135deg,#d97706,var(--gold));color:#0a1a0a}
+.result-ribbon.wrong{background:linear-gradient(135deg,#be123c,var(--red));color:#fff}
+.result-ribbon.pending{background:var(--card2);color:var(--muted2);border:1px solid var(--border);border-top:none}
+.match-meta{display:flex;justify-content:space-between;align-items:center;padding:8px 14px 4px;font-size:.7rem;color:var(--muted2);font-weight:600}
+.group-chip{display:block;width:fit-content;margin:12px auto 6px;background:rgba(56,189,248,.1);color:var(--blue);border-radius:8px;padding:3px 14px;font-size:.72rem;font-weight:700;letter-spacing:1px;text-align:center}
+.live-dot{color:var(--red);animation:pulse .7s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.countdown{font-weight:700;border-radius:100px;padding:3px 10px;font-size:.72rem}
+.countdown.days{background:rgba(74,222,128,.1);color:var(--green)}
+.countdown.hours{background:rgba(251,191,36,.12);color:var(--gold)}
+.countdown.mins{background:rgba(244,63,94,.12);color:var(--red);animation:pulse .7s ease-in-out infinite}
+.countdown.soon{background:rgba(244,63,94,.2);color:var(--red);animation:pulse .4s ease-in-out infinite}
+.match-body{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:10px 14px 14px}
+.team{display:flex;align-items:center;gap:8px}
+.team.away{flex-direction:row-reverse}
+.team-flag{font-size:1.8rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
+.team-name{font-weight:900;font-size:.9rem;line-height:1.2}
+.score-area{display:flex;align-items:center;gap:6px}
+.score-input{width:48px;height:48px;background:rgba(0,0,0,.4);border:2px solid var(--border);border-radius:14px;color:var(--green);font-size:1.4rem;font-weight:900;text-align:center;font-family:'Heebo',sans-serif;outline:none;transition:all .15s;-moz-appearance:textfield}
+.score-input::-webkit-outer-spin-button,.score-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.score-input:focus{border-color:var(--green);background:rgba(74,222,128,.05);box-shadow:0 0 0 3px rgba(74,222,128,.1)}
+.score-input:disabled{opacity:.5;cursor:not-allowed}
+.score-box{width:48px;height:48px;background:rgba(74,222,128,.08);border:2px solid rgba(74,222,128,.2);border-radius:14px;color:var(--green);font-size:1.4rem;font-weight:900;display:flex;align-items:center;justify-content:center}
+.vs-sep{font-size:1.1rem;font-weight:900;color:var(--vs)}
+.final-score{margin:0 14px 10px;background:rgba(0,0,0,.3);border-radius:10px;padding:6px 14px;display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
+.final-score .label{color:var(--muted2)}.final-score .score{font-weight:900;color:var(--green);letter-spacing:1px}
+.pred-footer{padding:0 14px 10px;font-size:.72rem;color:var(--muted2);display:flex;align-items:center;gap:4px}
+.save-wrap{text-align:center;margin:20px 0}
+.save-btn{background:linear-gradient(135deg,var(--green2),#16a34a);color:#0a1a0a;border:none;border-radius:100px;font-family:'Heebo',sans-serif;font-weight:900;font-size:1rem;padding:14px 48px;cursor:pointer;box-shadow:0 4px 24px rgba(34,197,94,.35);transition:all .2s}
+.save-btn:hover{transform:translateY(-3px);box-shadow:0 8px 36px rgba(34,197,94,.5)}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.leg{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted2)}
+.badge{font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:100px;white-space:nowrap}
+.badge.exact{background:rgba(74,222,128,.12);color:var(--green)}
+.badge.correct{background:rgba(251,191,36,.1);color:var(--gold)}
+.badge.wrong{background:rgba(244,63,94,.08);color:var(--red)}
+.score-bar{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.score-stat{text-align:center;flex:1;min-width:55px}
+.score-stat .val{font-size:1.8rem;font-weight:900;color:var(--green)}
+.score-stat .lbl{font-size:.65rem;color:var(--muted2);margin-top:1px}
+.lb{background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px}
+.lb-head{background:linear-gradient(135deg,rgba(74,222,128,.08),rgba(34,197,94,.04));padding:12px 18px;font-weight:900;font-size:.95rem;color:var(--green);border-bottom:1px solid var(--border)}
+.lb-row{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid rgba(30,58,30,.5);transition:background .15s}
+.lb-row:last-child{border-bottom:none}
+.lb-row:hover{background:rgba(74,222,128,.04)}
+.lb-rank{width:26px;text-align:center;font-weight:900;font-size:1rem}
+.lb-rank.g{color:var(--gold)}.lb-rank.s{color:#b0bec5}.lb-rank.b{color:#a0785a}
+.lb-name{flex:1;font-weight:700;font-size:.9rem}
+.lb-detail{font-size:.7rem;color:var(--muted2)}
+.lb-pts{font-size:1rem;font-weight:900;color:var(--green)}
+.lb-pts span{font-size:.62rem;color:var(--muted2);font-weight:400}
+.league-card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:10px}
+.league-name{font-weight:900;font-size:1rem;color:var(--text)}
+.league-meta{font-size:.75rem;color:var(--muted2);margin-top:3px}
+.invite-row{display:flex;gap:8px;align-items:center;margin-top:10px;background:var(--bg2);border-radius:10px;padding:8px 12px}
+.invite-link{flex:1;font-size:.72rem;color:var(--blue);word-break:break-all}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--muted2);border-radius:8px;padding:4px 10px;font-size:.72rem;cursor:pointer;font-family:'Heebo',sans-serif;transition:all .2s;white-space:nowrap}
+.copy-btn:hover{border-color:var(--green);color:var(--green)}
+.btn-secondary{background:none;border:1.5px solid var(--green2);color:var(--green);border-radius:100px;font-family:'Heebo',sans-serif;font-weight:700;font-size:.9rem;padding:10px 24px;cursor:pointer;transition:all .2s;width:100%;margin-top:8px}
+.btn-secondary:hover{background:rgba(74,222,128,.08)}
+.btn-secondary.blue{border-color:var(--blue);color:var(--blue)}
+.btn-secondary.blue:hover{background:rgba(56,189,248,.08)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:380px}
+.modal h2{font-size:1.1rem;font-weight:900;margin-bottom:16px;color:var(--green)}
+.modal-close{float:left;background:none;border:none;color:var(--muted2);font-size:1.2rem;cursor:pointer}
+.tournament-select{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;color:var(--text);font-family:'Heebo',sans-serif;font-size:.95rem;outline:none}
+.tournament-select:focus{border-color:var(--green)}
+.loader{text-align:center;padding:48px 20px;color:var(--muted2)}
+.spinner{width:36px;height:36px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--green);animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:36px 20px;color:var(--muted2)}
+.empty .icon{font-size:2.5rem;margin-bottom:8px}
+.sec-lbl{font-size:.68rem;font-weight:700;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin:20px 0 10px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:linear-gradient(135deg,var(--green2),#16a34a);color:#0a1a0a;padding:11px 28px;border-radius:100px;font-weight:900;font-size:.9rem;transition:transform .35s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;box-shadow:0 4px 24px rgba(34,197,94,.4)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="screen active" id="screen-auth">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <span class="ball">🏆</span>
+      <h1>אתה מבין בכלל?</h1>
+      <p>ליגת האלופות 2024/25 · תחרות ניחושים</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="authTab('login')">כניסה</div>
+      <div class="auth-tab" onclick="authTab('register')">הרשמה</div>
+    </div>
+    <div id="auth-err" class="auth-err"></div>
+    <div id="auth-form-login">
+      <div class="field"><label>אימייל</label><input type="email" id="l-email" placeholder="you@example.com" autocomplete="email"/></div>
+      <div class="field"><label>סיסמא</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"/></div>
+      <div style="text-align:left;margin-bottom:10px"><a href="#" onclick="showResetPassword()" style="font-size:.8rem;color:var(--muted2);text-decoration:none">שכחתי סיסמא</a></div>
+      <button class="btn-primary" onclick="doLogin()">כניסה →</button>
+    </div>
+    <div id="auth-form-register" style="display:none">
+      <div class="field"><label>שם משתמש</label><input type="text" id="r-name" placeholder="הגיבור שלך" maxlength="20"/></div>
+      <div class="field"><label>אימייל</label><input type="email" id="r-email" placeholder="you@example.com" autocomplete="email"/></div>
+      <div class="field"><label>סיסמא</label><input type="password" id="r-pass" placeholder="לפחות 6 תווים" autocomplete="new-password"/></div>
+      <button class="btn-primary" onclick="doRegister()">הרשמה →</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-app">
+  <header>
+    <span class="header-ball">🏆</span>
+    <h1>אתה מבין בכלל?</h1>
+    <p class="subtitle">ליגת האלופות 2024/25 · עד הגמר</p>
+    <div class="user-bar">
+      <div class="user-chip">👤 <span id="user-chip">@משתמש</span></div>
+      <button class="logout-btn" onclick="doLogout()">יציאה</button>
+    </div>
+  </header>
+
+  <div class="tabs-wrap">
+    <div class="tabs-row">
+      <div class="tab active" onclick="switchTab('predict')">📝 ניחושים</div>
+      <div class="tab" onclick="switchTab('results')">📊 תוצאות</div>
+      <div class="tab" onclick="switchTab('leagues')">🏆 ליגות</div>
+      <div class="tab" onclick="switchTab('lb')">🥇 ליגה שלי</div>
+    </div>
+    <div class="tabs-row">
+      <div class="tab" onclick="switchTab('global')">🌍 עולמי</div>
+      <div class="tab" onclick="switchTab('tournament')">🎯 אלופה + מבקיע</div>
+      <div class="tab" onclick="switchTab('scorers')">⚽ מבקיעים</div>
+    </div>
+  </div>
+
+  <div class="panel active" id="panel-predict">
+    <div class="legend">
+      <div class="leg"><span class="badge exact">מדויק 🎯</span> × נק' לפי שלב</div>
+      <div class="leg"><span class="badge correct">נכון 👍</span> × נק' לפי שלב</div>
+    </div>
+    <div class="stage-bar" id="predict-stages"></div>
+    <div id="predict-list"><div class="loader"><div class="spinner"></div>טוען משחקים...</div></div>
+    <div class="save-wrap"><button class="save-btn" onclick="saveAll()">💾 שמור ניחושים</button></div>
+  </div>
+
+  <div class="panel" id="panel-results">
+    <div id="my-score-bar"></div>
+    <div class="stage-bar" id="result-stages"></div>
+    <div id="results-list"></div>
+  </div>
+
+  <div class="panel" id="panel-leagues">
+    <div class="sec-lbl">הליגות שלי</div>
+    <div id="my-leagues"><div class="loader"><div class="spinner"></div></div></div>
+    <button class="btn-secondary" onclick="openModal('create')">+ צור ליגה חדשה</button>
+    <button class="btn-secondary blue" style="margin-top:8px" onclick="openModal('join')">🔗 הצטרף לליגה</button>
+  </div>
+
+  <div class="panel" id="panel-lb">
+    <div class="sec-lbl">בחר ליגה</div>
+    <div id="lb-league-select" style="margin-bottom:14px"></div>
+    <div id="lb-content"></div>
+  </div>
+
+  <div class="panel" id="panel-global">
+    <div class="sec-lbl">🌍 טבלת מובילים עולמית</div>
+    <div id="global-lb-content"><div class="loader"><div class="spinner"></div>טוען...</div></div>
+  </div>
+
+  <div class="panel" id="panel-tournament">
+    <div class="sec-lbl">🏆 ניחושי טורניר — 15 נקודות לניחוש נכון</div>
+    <div id="tournament-lock-info" style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:16px;font-size:.82rem;color:var(--muted2);text-align:center"></div>
+    <div id="tournament-preds-content"></div>
+  </div>
+
+  <div class="panel" id="panel-scorers">
+    <div class="sec-lbl">⚽ מבקיע מצטיין — עדכון אוטומטי</div>
+    <div id="scorers-content"><div class="loader"><div class="spinner"></div>טוען...</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal"><button class="modal-close" onclick="closeModal('reset')">✕</button>
+    <h2>🔑 איפוס סיסמא</h2>
+    <div class="field"><label>אימייל</label><input type="email" id="reset-email" placeholder="you@example.com"/></div>
+    <button class="btn-primary" onclick="doResetPassword()">שלח קישור איפוס</button>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-create">
+  <div class="modal"><button class="modal-close" onclick="closeModal('create')">✕</button>
+    <h2>🏆 צור ליגה חדשה</h2>
+    <div class="field"><label>שם הליגה</label><input type="text" id="c-name" placeholder="ליגת החברים שלי"/></div>
+    <div class="field"><label>סיסמא לליגה</label><input type="password" id="c-pass" placeholder="סיסמא לכניסה"/></div>
+    <button class="btn-primary" onclick="createLeague()">צור ליגה</button>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-join">
+  <div class="modal"><button class="modal-close" onclick="closeModal('join')">✕</button>
+    <h2>🔗 הצטרף לליגה</h2>
+    <div class="field"><label>שם הליגה</label><input type="text" id="j-name" placeholder="שם הליגה"/></div>
+    <div class="field"><label>סיסמא</label><input type="password" id="j-pass" placeholder="סיסמא"/></div>
+    <button class="btn-primary" onclick="joinLeague()">הצטרף</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://anbsebphyvcogybfyhqg.supabase.co';
+const SUPABASE_ANON='sb_publishable_yPANCDKmFR3i1xaKfy7jbQ_hMG2kTGf';
+const FOOTBALL_KEY='af0f85c488234b519d650a5d8cf37e97';
+
+async function sbFetch(path,options={}){
+  const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...options,headers:{'apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON,'Content-Type':'application/json','Prefer':'return=representation',...(options.headers||{})}});
+  if(!r.ok)throw new Error(await r.text());
+  const t=await r.text();return t?JSON.parse(t):null;
+}
+const{createClient}=supabase;
+const sb=createClient(SUPABASE_URL,SUPABASE_ANON);
+
+const STAGE_PTS={GROUP_STAGE:{exact:3,correct:1},LAST_16:{exact:5,correct:2},QUARTER_FINALS:{exact:7,correct:3},SEMI_FINALS:{exact:9,correct:4},FINAL:{exact:12,correct:5}};
+const STAGE_LABELS={GROUP_STAGE:'שלב הבתים',PLAYOFF_ROUND_ONE:'פלייאוף',LAST_16:'שמינית גמר',QUARTER_FINALS:'רבע גמר',SEMI_FINALS:'חצי גמר',FINAL:'גמר'};
+const STAGE_ORDER=['GROUP_STAGE','PLAYOFF_ROUND_ONE','LAST_16','QUARTER_FINALS','SEMI_FINALS','FINAL'];
+const FLAGS={MEX:'🇲🇽',KOR:'🇰🇷',RSA:'🇿🇦',CZE:'🇨🇿',CAN:'🇨🇦',USA:'🇺🇸',AUS:'🇦🇺',TUR:'🇹🇷',BRA:'🇧🇷',MAR:'🇲🇦',GER:'🇩🇪',ECU:'🇪🇨',NED:'🇳🇱',JPN:'🇯🇵',ESP:'🇪🇸',KSA:'🇸🇦',URU:'🇺🇾',BEL:'🇧🇪',IRN:'🇮🇷',FRA:'🇫🇷',SEN:'🇸🇳',NOR:'🇳🇴',ARG:'🇦🇷',AUT:'🇦🇹',POR:'🇵🇹',COL:'🇨🇴',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦',CHI:'🇨🇱',PER:'🇵🇪',POL:'🇵🇱',SUI:'🇨🇭',QAT:'🇶🇦',EGY:'🇪🇬',IRQ:'🇮🇶',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',WAL:'🏴󠁧󠁢󠁷󠁬󠁳󠁿',NZL:'🇳🇿',SLO:'🇸🇮',SVK:'🇸🇰',HUN:'🇭🇺',ROU:'🇷🇴',SRB:'🇷🇸',UKR:'🇺🇦',ALB:'🇦🇱',GEO:'🇬🇪',TUN:'🇹🇳',CMR:'🇨🇲',CIV:'🇨🇮',NGA:'🇳🇬',HAI:'🇭🇹',VEN:'🇻🇪',BOL:'🇧🇴',PAR:'🇵🇾',HND:'🇭🇳',CRC:'🇨🇷',JAM:'🇯🇲',SLV:'🇸🇻',TRI:'🇹🇹',BIH:'🇧🇦',MKD:'🇲🇰',SVN:'🇸🇮',IDN:'🇮🇩',THA:'🇹🇭',VNM:'🇻🇳',PHI:'🇵🇭',IND:'🇮🇳',CHN:'🇨🇳',OMA:'🇴🇲',BHR:'🇧🇭',JOR:'🇯🇴',LBN:'🇱🇧',SYR:'🇸🇾',YEM:'🇾🇪',KWT:'🇰🇼',UAE:'🇦🇪',TKM:'🇹🇲',UZB:'🇺🇿',KAZ:'🇰🇿',KGZ:'🇰🇬',TJK:'🇹🇯'};
+
+// תרגום שמות קבוצות לעברית — הנתונים ב-DB באנגלית, התצוגה בעברית
+const TEAM_HE={
+  'Mexico':'מקסיקו','South Africa':'דרום אפריקה','Korea Republic':'קוריאה','Czechia':'צ׳כיה',
+  'Czech Republic':'צ׳כיה','Canada':'קנדה','Bosnia-H.':'בוסניה','Bosnia and Herzegovina':'בוסניה',
+  'USA':'ארה"ב','United States':'ארה"ב','Paraguay':'פרגוואי','Qatar':'קטר','Switzerland':'שווייץ',
+  'Brazil':'ברזיל','Morocco':'מרוקו','Haiti':'האיטי','Scotland':'סקוטלנד','Australia':'אוסטרליה',
+  'Turkey':'טורקיה','Türkiye':'טורקיה','Argentina':'ארגנטינה','France':'צרפת','Germany':'גרמניה',
+  'Spain':'ספרד','England':'אנגליה','Portugal':'פורטוגל','Netherlands':'הולנד','Belgium':'בלגיה',
+  'Italy':'איטליה','Croatia':'קרואטיה','Uruguay':'אורוגוואי','Colombia':'קולומביה','Japan':'יפן',
+  'Saudi Arabia':'ערב הסעודית','Ecuador':'אקוודור','Senegal':'סנגל','Norway':'נורווגיה',
+  'Poland':'פולין','Ghana':'גאנה','Panama':'פנמה','Chile':'צ׳ילה','Peru':'פרו',
+  'Iran':'איראן','Egypt':'מצרים','Nigeria':'ניגריה','Ivory Coast':'קוטה דיוואר',
+  "Côte d'Ivoire":"קוטה דיוואר",'Cameroon':'קמרון','Iraq':'עיראק','Jordan':'ירדן',
+  'New Zealand':'ניו זילנד','Venezuela':'ונצואלה','Slovenia':'סלובניה','Slovakia':'סלובקיה',
+  'Hungary':'הונגריה','Romania':'רומניה','Serbia':'סרביה','Ukraine':'אוקראינה','Albania':'אלבניה',
+  'Georgia':'גאורגיה','Tunisia':'טוניסיה','Indonesia':'אינדונזיה','Honduras':'הונדורס',
+  'Costa Rica':'קוסטה ריקה','Jamaica':'ג׳מייקה','El Salvador':'אל סלוודור',
+  'Trinidad and Tobago':'טרינידד','Wales':'ויילס',
+};
+function teamName(n){return TEAM_HE[n]||n;}
+
+let currentUser=null,userProfile=null,allMatches=[],myPredictions={},localPreds={};
+let currentPredStage='GROUP_STAGE',currentResStage='GROUP_STAGE';
+let myLeagues=[],selectedLBLeague=null,appInitialized=false;
+
+function previewMode(){
+  currentUser = { id: 'preview', email: 'preview@demo.com', user_metadata: { username: 'תצוגה מקדימה' } };
+  document.getElementById('user-chip').textContent = '@תצוגה מקדימה';
+  showScreen('app');
+  // Load fake matches for preview
+  allMatches = [
+    {id:1,utcDate:'2026-06-11T22:00:00Z',status:'SCHEDULED',stage:'GROUP_STAGE',group:'GROUP_A',homeTeam:{name:'Mexico',shortName:'Mexico',tla:'MEX'},awayTeam:{name:'South Africa',shortName:'S. Africa',tla:'RSA'},score:{fullTime:{home:null,away:null}}},
+    {id:2,utcDate:'2026-06-12T18:00:00Z',status:'SCHEDULED',stage:'GROUP_STAGE',group:'GROUP_A',homeTeam:{name:'Ecuador',shortName:'Ecuador',tla:'ECU'},awayTeam:{name:'Canada',shortName:'Canada',tla:'CAN'},score:{fullTime:{home:null,away:null}}},
+    {id:3,utcDate:'2026-06-12T21:00:00Z',status:'FINISHED',stage:'GROUP_STAGE',group:'GROUP_B',homeTeam:{name:'Argentina',shortName:'Argentina',tla:'ARG'},awayTeam:{name:'France',shortName:'France',tla:'FRA'},score:{fullTime:{home:2,away:1}}},
+    {id:4,utcDate:'2026-06-13T18:00:00Z',status:'FINISHED',stage:'GROUP_STAGE',group:'GROUP_B',homeTeam:{name:'Brazil',shortName:'Brazil',tla:'BRA'},awayTeam:{name:'England',shortName:'England',tla:'ENG'},score:{fullTime:{home:1,away:1}}},
+    {id:5,utcDate:'2026-06-13T21:00:00Z',status:'IN_PLAY',stage:'GROUP_STAGE',group:'GROUP_C',homeTeam:{name:'Spain',shortName:'Spain',tla:'ESP'},awayTeam:{name:'Germany',shortName:'Germany',tla:'GER'},score:{fullTime:{home:2,away:0}}},
+  ];
+  myPredictions = {
+    3: { home_goals:2, away_goals:1, match_id:3 },
+    4: { home_goals:0, away_goals:2, match_id:4 },
+  };
+  renderPredict();
+}
+
+function authTab(t){
+  document.querySelectorAll('.auth-tab').forEach((el,i)=>el.classList.toggle('active',['login','register'][i]===t));
+  document.getElementById('auth-form-login').style.display=t==='login'?'block':'none';
+  document.getElementById('auth-form-register').style.display=t==='register'?'block':'none';
+  document.getElementById('auth-err').style.display='none';
+}
+function showAuthErr(m){const el=document.getElementById('auth-err');el.textContent=m;el.style.display='block';}
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim(),pass=document.getElementById('l-pass').value;
+  if(!email||!pass)return showAuthErr('מלא אימייל וסיסמא');
+  const btn=document.querySelector('#auth-form-login .btn-primary');
+  btn.disabled=true;btn.textContent='מתחבר...';
+  const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  btn.disabled=false;btn.textContent='כניסה →';
+  if(error){showAuthErr(error.message==='Invalid login credentials'?'אימייל או סיסמא שגויים':error.message);return;}
+  if(data?.user){currentUser=data.user;showScreen('app');loadProfile();if(!appInitialized){appInitialized=true;initApp();}}
+}
+async function doRegister(){
+  const name=document.getElementById('r-name').value.trim(),email=document.getElementById('r-email').value.trim(),pass=document.getElementById('r-pass').value;
+  if(!name||!email||!pass)return showAuthErr('מלא את כל השדות');
+  if(pass.length<6)return showAuthErr('סיסמא חייבת להיות לפחות 6 תווים');
+  const btn=document.querySelector('#auth-form-register .btn-primary');
+  btn.disabled=true;btn.textContent='נרשם...';
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{username:name}}});
+  btn.disabled=false;btn.textContent='הרשמה →';
+  if(error){showAuthErr(error.message);return;}
+  if(data?.user){currentUser=data.user;await new Promise(r=>setTimeout(r,1500));showScreen('app');loadProfile();if(!appInitialized){appInitialized=true;initApp();}}
+}
+function showResetPassword(){document.getElementById('reset-email').value=document.getElementById('l-email').value||'';openModal('reset');}
+async function doResetPassword(){
+  const email=document.getElementById('reset-email').value.trim();
+  if(!email)return toast('⚠️ הכנס אימייל');
+  const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
+  if(error)toast('❌ '+error.message);else{closeModal('reset');toast('✅ קישור נשלח למייל!');}
+}
+async function doLogout(){await sb.auth.signOut();currentUser=null;userProfile=null;appInitialized=false;showScreen('auth');}
+
+sb.auth.onAuthStateChange(async(event,session)=>{
+  if(session?.user){currentUser=session.user;showScreen('app');loadProfile();if(!appInitialized){appInitialized=true;initApp();}}
+  else if(event==='SIGNED_OUT'){appInitialized=false;currentUser=null;showScreen('auth');}
+});
+
+async function loadProfile(){
+  try{
+    const rows=await sbFetch('profiles?id=eq.'+currentUser.id+'&select=*');
+    let data=rows?.[0];
+    if(!data){const res=await sbFetch('profiles',{method:'POST',body:JSON.stringify({id:currentUser.id,username:currentUser.user_metadata?.username||currentUser.email.split('@')[0]})});data=res?.[0];}
+    userProfile=data;
+    document.getElementById('user-chip').textContent='@'+(data?.username||currentUser.email.split('@')[0]);
+  }catch(e){document.getElementById('user-chip').textContent='@'+currentUser.email.split('@')[0];}
+}
+
+async function fetchMatches(){
+  try{
+    const r=await sbFetch('matches?order=utc_date');
+    if(r&&r.length>0){
+      allMatches=r.map(m=>({id:m.match_id,utcDate:m.utc_date,status:m.status,stage:m.stage,group:m.group_name,homeTeam:{name:m.home_team||'טרם נקבע',shortName:m.home_team||'טרם נקבע',tla:m.home_tla},awayTeam:{name:m.away_team||'טרם נקבע',shortName:m.away_team||'טרם נקבע',tla:m.away_tla},score:{fullTime:{home:m.home_score,away:m.away_score}}}));
+      console.log('matches:',allMatches.length);
+    }
+  }catch(e){console.error(e);allMatches=[];renderPredict();}
+}
+function getScore(m){const ft=m.score?.fullTime;if(ft&&ft.home!==null&&ft.away!==null)return{h:ft.home,a:ft.away,known:true};return{h:null,a:null,known:false};}
+function fmtDate(d){const dt=new Date(d);const days=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];const months=['ינו','פבר','מרץ','אפר','מאי','יוני','יולי','אוג'];return`יום ${days[dt.getDay()]}, ${dt.getDate()} ${months[dt.getMonth()]} · ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;}
+const FLAGS_BY_NAME={'Mexico':'🇲🇽','South Africa':'🇿🇦','Korea Republic':'🇰🇷','Czechia':'🇨🇿','Czech Republic':'🇨🇿','Canada':'🇨🇦','USA':'🇺🇸','United States':'🇺🇸','Paraguay':'🇵🇾','Qatar':'🇶🇦','Switzerland':'🇨🇭','Brazil':'🇧🇷','Morocco':'🇲🇦','Haiti':'🇭🇹','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Australia':'🇦🇺','Turkey':'🇹🇷','Türkiye':'🇹🇷','Argentina':'🇦🇷','France':'🇫🇷','Germany':'🇩🇪','Spain':'🇪🇸','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Portugal':'🇵🇹','Netherlands':'🇳🇱','Belgium':'🇧🇪','Italy':'🇮🇹','Croatia':'🇭🇷','Uruguay':'🇺🇾','Colombia':'🇨🇴','Japan':'🇯🇵','Saudi Arabia':'🇸🇦','Ecuador':'🇪🇨','Senegal':'🇸🇳','Norway':'🇳🇴','Poland':'🇵🇱','Ghana':'🇬🇭','Panama':'🇵🇦','Chile':'🇨🇱','Peru':'🇵🇪','Iran':'🇮🇷','Egypt':'🇪🇬','Nigeria':'🇳🇬',"Côte d'Ivoire":'🇨🇮','Ivory Coast':'🇨🇮','Cameroon':'🇨🇲','Iraq':'🇮🇶','Jordan':'🇯🇴','New Zealand':'🇳🇿','Bosnia-H.':'🇧🇦','Bosnia and Herzegovina':'🇧🇦','Venezuela':'🇻🇪','Slovenia':'🇸🇮','Slovakia':'🇸🇰','Hungary':'🇭🇺','Romania':'🇷🇴','Serbia':'🇷🇸','Ukraine':'🇺🇦','Albania':'🇦🇱','Georgia':'🇬🇪','Tunisia':'🇹🇳','Indonesia':'🇮🇩','Honduras':'🇭🇳','Costa Rica':'🇨🇷','Jamaica':'🇯🇲','El Salvador':'🇸🇻','Trinidad and Tobago':'🇹🇹','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿'};
+function flag(tla,name){return FLAGS[tla]||(name?FLAGS_BY_NAME[name]:null)||'🏳️';}
+function calcPts(pred,result,stage){
+  if(!pred||pred.h===undefined||pred.h===''||!result.known)return null;
+  const pts=STAGE_PTS[stage]||STAGE_PTS.GROUP_STAGE;
+  const ph=parseInt(pred.h),pa=parseInt(pred.a);
+  if(isNaN(ph)||isNaN(pa))return null;
+  if(ph===result.h&&pa===result.a)return{pts:pts.exact,tag:'exact',label:`מדויק! 🎯 +${pts.exact}`};
+  const pw=ph>pa?'h':ph<pa?'a':'d',rw=result.h>result.a?'h':result.h<result.a?'a':'d';
+  if(pw===rw)return{pts:pts.correct,tag:'correct',label:`נכון! 👍 +${pts.correct}`};
+  return{pts:0,tag:'wrong',label:'פספסת 😬'};
+}
+function getCountdown(utcDate){
+  const diff=new Date(utcDate).getTime()-Date.now();
+  if(diff<=0)return null;
+  const mins=Math.floor(diff/60000);
+  if(mins<5)return`<span class="countdown soon">⚡ מיד!</span>`;
+  if(mins<60)return`<span class="countdown mins">🔥 ${mins} דק'</span>`;
+  const hrs=Math.floor(mins/60);
+  if(hrs<24)return`<span class="countdown hours">⏱ ${hrs} שע'</span>`;
+  return`<span class="countdown days">📅 ${Math.floor(hrs/24)} ימים</span>`;
+}
+
+async function loadMyPredictions(){
+  if(!currentUser)return;
+  try{const data=await sbFetch('predictions?user_id=eq.'+currentUser.id+'&select=*');myPredictions={};(data||[]).forEach(p=>{myPredictions[p.match_id]=p;});localPreds={};}catch(e){}
+}
+async function savePrediction(matchId,homeGoals,awayGoals,stage){
+  if(!currentUser)return;
+  const existing=myPredictions[matchId];
+  if(existing?.locked)return;
+  const payload={user_id:currentUser.id,match_id:matchId,home_goals:homeGoals,away_goals:awayGoals,stage,updated_at:new Date().toISOString()};
+  try{
+    if(existing){await sbFetch('predictions?id=eq.'+existing.id,{method:'PATCH',body:JSON.stringify(payload)});myPredictions[matchId]={...existing,...payload};}
+    else{const data=await sbFetch('predictions',{method:'POST',body:JSON.stringify(payload)});if(data?.[0])myPredictions[matchId]=data[0];}
+  }catch(e){}
+}
+async function saveAll(){
+  const btn=document.querySelector('.save-btn');btn.disabled=true;btn.textContent='שומר...';
+  let count=0;
+  for(const[matchId,pred]of Object.entries(localPreds)){
+    if(pred.h!==''&&pred.a!==''){const m=allMatches.find(x=>x.id==matchId);if(m){await savePrediction(parseInt(matchId),parseInt(pred.h),parseInt(pred.a),m.stage);count++;}}
+  }
+  localPreds={};await loadMyPredictions();renderPredict();
+  btn.disabled=false;btn.textContent='💾 שמור ניחושים';
+  toast(`✅ ${count} ניחושים נשמרו!`);
+}
+async function autofillBot(){
+  const phrases=['🤖 הבוט מילא בשבילך','🦾 הרובוט החליט','🎲 נבחר באקראי ע״י AI','🧠 הבינה המלאכותית דיברה'];
+  let count=0;
+  for(const m of allMatches){
+    const minsLeft=Math.floor((new Date(m.utcDate).getTime()-Date.now())/60000);
+    if(minsLeft<=2&&minsLeft>=-5&&!myPredictions[m.id]){await savePrediction(m.id,Math.floor(Math.random()*4),Math.floor(Math.random()*4),m.stage);count++;}
+  }
+  if(count>0){await loadMyPredictions();renderPredict();toast(`${phrases[Math.floor(Math.random()*phrases.length)]} (${count})`);}
+}
+
+function getStages(){const seen=new Set(allMatches.map(m=>m.stage));return STAGE_ORDER.filter(s=>seen.has(s));}
+function buildStageBar(containerId,activeStage,fn){
+  const el=document.getElementById(containerId);
+  el.innerHTML=getStages().map(s=>{
+    const count=allMatches.filter(m=>m.stage===s).length;
+    return`<button class="stage-btn ${s===activeStage?'active':''}" onclick="${fn}('${s}')">${STAGE_LABELS[s]||s}${count?` <span class="count">${count}</span>`:''}</button>`;
+  }).join('');
+}
+
+function renderPredict(){
+  buildStageBar('predict-stages',currentPredStage,'setPredStage');
+  const matches=allMatches.filter(m=>m.stage===currentPredStage);
+  if(!matches.length){document.getElementById('predict-list').innerHTML=`<div class="empty"><div class="icon">⏳</div>משחקים יעודכנו כשהשלב יתחיל</div>`;return;}
+  const pts=STAGE_PTS[currentPredStage]||STAGE_PTS.GROUP_STAGE;
+  let html=`<div class="legend" style="margin-bottom:8px"><div class="leg"><span class="badge exact">מדויק 🎯</span> ${pts.exact} נק'</div><div class="leg"><span class="badge correct">נכון 👍</span> ${pts.correct} נק'</div></div>`;
+  let lastGroup='';
+  for(const m of matches){
+    if(currentPredStage==='GROUP_STAGE'&&m.group&&m.group!==lastGroup){lastGroup=m.group;html+=`<div class="group-chip">בית ${m.group.replace('GROUP_','')}</div>`;}
+    const saved=myPredictions[m.id],local=localPreds[m.id];
+    const ph=local?.h??saved?.home_goals??'',pa=local?.a??saved?.away_goals??'';
+    const isLocked=saved?.locked||m.status==='FINISHED'||m.status==='IN_PLAY'||m.status==='PAUSED';
+    const score=getScore(m);
+    const ptsCalc=saved?calcPts({h:saved.home_goals,a:saved.away_goals},score,m.stage):null;
+    const isLive=m.status==='IN_PLAY'||m.status==='PAUSED';
+    const countdown=!isLocked&&!score.known?getCountdown(m.utcDate):null;
+    const ribbon=ptsCalc?`<div class="result-ribbon ${ptsCalc.tag}">${ptsCalc.label}</div>`:isLocked&&!score.known?`<div class="result-ribbon pending">🔒 נעול</div>`:'';
+    html+=`<div class="match-card ${isLive?'live':''} ${score.known?'finished':''}">
+      ${ribbon}
+      <div class="match-meta" style="${ribbon?'padding-top:28px':''}">
+        <span>${isLive?'<span class="live-dot">●</span> לייב':fmtDate(m.utcDate)}</span>
+        ${countdown||( score.known?`<b style="color:var(--green)">${score.h}:${score.a}</b>`:'')}
+      </div>
+      <div class="match-body">
+        <div class="team"><span class="team-flag">${flag(m.homeTeam.tla,m.homeTeam.name)}</span><span class="team-name">${teamName(m.homeTeam.name)}</span></div>
+        <div class="score-area">
+          <input class="score-input" type="number" min="0" max="20" placeholder="-" value="${ph}" ${isLocked?'disabled':''} oninput="setLocal(${m.id},'h',this.value)">
+          <span class="vs-sep">VS</span>
+          <input class="score-input" type="number" min="0" max="20" placeholder="-" value="${pa}" ${isLocked?'disabled':''} oninput="setLocal(${m.id},'a',this.value)">
+        </div>
+        <div class="team away"><span class="team-flag">${flag(m.awayTeam.tla,m.awayTeam.name)}</span><span class="team-name">${teamName(m.awayTeam.name)}</span></div>
+      </div>
+      ${score.known?`<div class="final-score"><span class="label">תוצאה סופית:</span><span class="score">${score.h} - ${score.a}</span></div>`:''}
+      ${saved&&!ptsCalc?`<div class="pred-footer">${saved.bot_filled?'🤖 מולא ע״י בוט:':'🔒 הניחוש שלך:'} ${saved.home_goals}:${saved.away_goals}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('predict-list').innerHTML=html;
+}
+function setPredStage(s){currentPredStage=s;renderPredict();}
+function setLocal(id,side,val){if(!localPreds[id])localPreds[id]={};localPreds[id][side]=val;}
+
+function renderResults(){
+  buildStageBar('result-stages',currentResStage,'setResStage');
+  let total=0,exact=0,correct=0;
+  allMatches.forEach(m=>{const sc=getScore(m);const saved=myPredictions[m.id];if(saved&&sc.known){const r=calcPts({h:saved.home_goals,a:saved.away_goals},sc,m.stage);if(r){total+=r.pts;if(r.tag==='exact')exact++;else if(r.pts>0)correct++;}}});
+  document.getElementById('my-score-bar').innerHTML=`<div class="score-bar"><div class="score-stat"><div class="val">${total}</div><div class="lbl">נקודות סה"כ</div></div><div class="score-stat"><div class="val">${exact}</div><div class="lbl">מדויקות 🎯</div></div><div class="score-stat"><div class="val">${correct}</div><div class="lbl">נכונות 👍</div></div></div>`;
+  const finished=allMatches.filter(m=>m.stage===currentResStage&&(m.status==='FINISHED'||m.status==='IN_PLAY'));
+  if(!finished.length){document.getElementById('results-list').innerHTML=`<div class="empty"><div class="icon">📅</div>אין תוצאות בשלב זה עדיין</div>`;return;}
+  let html='',lastGroup='';
+  for(const m of finished){
+    if(currentResStage==='GROUP_STAGE'&&m.group&&m.group!==lastGroup){lastGroup=m.group;html+=`<div class="group-chip">בית ${m.group.replace('GROUP_','')}</div>`;}
+    const sc=getScore(m),saved=myPredictions[m.id];
+    const ptsCalc=saved?calcPts({h:saved.home_goals,a:saved.away_goals},sc,m.stage):null;
+    html+=`<div class="match-card ${m.status==='IN_PLAY'?'live':'finished'}">
+      ${ptsCalc?`<div class="result-ribbon ${ptsCalc.tag}">${ptsCalc.label}</div>`:'<div class="result-ribbon pending">לא ניחשת</div>'}
+      <div class="match-meta" style="padding-top:28px"><span>${fmtDate(m.utcDate)}</span><b style="color:var(--green)">${sc.h}:${sc.a}</b></div>
+      <div class="match-body">
+        <div class="team"><span class="team-flag">${flag(m.homeTeam.tla,m.homeTeam.name)}</span><span class="team-name">${teamName(m.homeTeam.name)}</span></div>
+        <div class="score-area"><div class="score-box">${sc.h}</div><span class="vs-sep">VS</span><div class="score-box">${sc.a}</div></div>
+        <div class="team away"><span class="team-flag">${flag(m.awayTeam.tla,m.awayTeam.name)}</span><span class="team-name">${teamName(m.awayTeam.name)}</span></div>
+      </div>
+      ${saved?`<div class="pred-footer">🔒 הניחוש שלך: ${saved.home_goals}:${saved.away_goals}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('results-list').innerHTML=html;
+}
+function setResStage(s){currentResStage=s;renderResults();}
+
+async function loadMyLeagues(){if(!currentUser)return;try{const data=await sbFetch('league_members?user_id=eq.'+currentUser.id+'&select=league_id,leagues(*)');myLeagues=(data||[]).map(d=>d.leagues).filter(Boolean);}catch(e){myLeagues=[];}}
+function renderLeagues(){
+  const el=document.getElementById('my-leagues');
+  if(!myLeagues.length){el.innerHTML=`<div class="empty"><div class="icon">🏟️</div>אין לך ליגות עדיין</div>`;return;}
+  el.innerHTML=myLeagues.map(l=>{const url=`${location.origin}${location.pathname}?join=${l.invite_code}`;return`<div class="league-card"><div class="league-name">🏆 ${l.name}</div><div class="league-meta">קוד: <b>${l.invite_code}</b></div><div class="invite-row"><div class="invite-link">${url}</div><button class="copy-btn" onclick="copyInvite('${url}')">העתק</button></div></div>`;}).join('');
+}
+function copyInvite(url){navigator.clipboard.writeText(url).then(()=>toast('✅ לינק הועתק!'));}
+async function createLeague(){
+  const name=document.getElementById('c-name').value.trim(),pass=document.getElementById('c-pass').value;
+  if(!name||!pass)return toast('⚠️ מלא שם וסיסמא');
+  try{const res=await sbFetch('leagues',{method:'POST',body:JSON.stringify({name,password_hash:btoa(pass),created_by:currentUser.id})});const league=res?.[0];if(!league)return toast('❌ שגיאה');await sbFetch('league_members',{method:'POST',body:JSON.stringify({league_id:league.id,user_id:currentUser.id})});}catch(e){return toast('❌ '+e.message);}
+  closeModal('create');await loadMyLeagues();renderLeagues();toast('✅ ליגה נוצרה!');
+}
+async function joinLeague(){
+  const name=document.getElementById('j-name').value.trim(),pass=document.getElementById('j-pass').value;
+  let leagues;try{leagues=await sbFetch('leagues?name=eq.'+encodeURIComponent(name)+'&select=*');}catch(e){}
+  const league=leagues?.[0];if(!league)return toast('❌ ליגה לא נמצאה');
+  if(league.password_hash!==btoa(pass))return toast('❌ סיסמא שגויה');
+  try{await sbFetch('league_members',{method:'POST',body:JSON.stringify({league_id:league.id,user_id:currentUser.id})});}catch(e){if(!e.message.includes('23505'))return toast('❌ '+e.message);}
+  closeModal('join');await loadMyLeagues();renderLeagues();toast('✅ הצטרפת!');
+}
+async function checkInviteLink(){
+  const code=new URLSearchParams(location.search).get('join');if(!code||!currentUser)return;
+  const leagues=await sbFetch('leagues?invite_code=eq.'+code+'&select=*');const league=leagues?.[0];if(!league)return;
+  try{await sbFetch('league_members',{method:'POST',body:JSON.stringify({league_id:league.id,user_id:currentUser.id})});}catch(e){}
+  history.replaceState({},'',location.pathname);await loadMyLeagues();switchTab('leagues');toast(`✅ הצטרפת לליגה "${league.name}"!`);
+}
+
+async function renderLB(){
+  const el=document.getElementById('lb-content');el.innerHTML=`<div class="loader"><div class="spinner"></div>טוען...</div>`;
+  const selEl=document.getElementById('lb-league-select');
+  if(!myLeagues.length){selEl.innerHTML='';el.innerHTML=`<div class="empty"><div class="icon">🏟️</div>הצטרף לליגה כדי לראות טבלה</div>`;return;}
+  if(!selectedLBLeague)selectedLBLeague=myLeagues[0].id;
+  selEl.innerHTML=myLeagues.map(l=>`<button class="stage-btn ${l.id===selectedLBLeague?'active':''}" onclick="selectLBLeague('${l.id}')">${l.name}</button>`).join('');
+  const members=await sbFetch('league_members?league_id=eq.'+selectedLBLeague+'&select=user_id,profiles(username)')||[];
+  if(!members.length){el.innerHTML=`<div class="empty">אין חברים עדיין</div>`;return;}
+  const preds=await sbFetch('predictions?user_id=in.('+members.map(m=>m.user_id).join(',')+')'+'&select=*')||[];
+  const scores=members.map(m=>{let total=0,exact=0,correct=0;allMatches.forEach(match=>{const sc=getScore(match);const p=preds.find(x=>x.user_id===m.user_id&&x.match_id===match.id);if(p&&sc.known){const r=calcPts({h:p.home_goals,a:p.away_goals},sc,match.stage);if(r){total+=r.pts;if(r.tag==='exact')exact++;else if(r.pts>0)correct++;}}});return{uid:m.user_id,uname:m.profiles?.username||m.user_id.slice(0,8),total,exact,correct};}).sort((a,b)=>b.total-a.total);
+  const medals=['🥇','🥈','🥉'],cls=['g','s','b'];
+  el.innerHTML=`<div class="lb"><div class="lb-head">🏆 ${myLeagues.find(l=>l.id===selectedLBLeague)?.name}</div>${scores.map((s,i)=>`<div class="lb-row"><div class="lb-rank ${cls[i]||''}">${medals[i]||(i+1)}</div><div class="lb-name">${s.uname}${s.uid===currentUser?.id?' 👈':''}</div><div class="lb-detail">${s.exact}🎯 ${s.correct}👍</div><div class="lb-pts">${s.total} <span>נק'</span></div></div>`).join('')}</div>`;
+}
+function selectLBLeague(id){selectedLBLeague=id;renderLB();}
+
+async function renderGlobalLB(){
+  const el=document.getElementById('global-lb-content');el.innerHTML='<div class="loader"><div class="spinner"></div>טוען...</div>';
+  try{
+    const preds=await sbFetch('predictions?select=*')||[];
+    const profiles=await sbFetch('profiles?select=*')||[];
+    const pm={};profiles.forEach(p=>{pm[p.id]=p.username;});
+    const us={};
+    allMatches.forEach(match=>{const sc=getScore(match);if(!sc.known)return;preds.filter(p=>p.match_id===match.id).forEach(p=>{if(!us[p.user_id])us[p.user_id]={total:0,exact:0,correct:0};const r=calcPts({h:p.home_goals,a:p.away_goals},sc,match.stage);if(r){us[p.user_id].total+=r.pts;if(r.tag==='exact')us[p.user_id].exact++;else if(r.pts>0)us[p.user_id].correct++;}});});
+    const sorted=Object.entries(us).map(([uid,s])=>({uid,name:pm[uid]||uid.slice(0,8),...s})).sort((a,b)=>b.total-a.total);
+    if(!sorted.length){el.innerHTML='<div class="empty"><div class="icon">📊</div>אין נתונים עדיין</div>';return;}
+    const medals=['🥇','🥈','🥉'],cls=['g','s','b'];
+    el.innerHTML=`<div class="lb"><div class="lb-head">🌍 טבלת מובילים עולמית</div>${sorted.map((s,i)=>`<div class="lb-row"><div class="lb-rank ${cls[i]||''}">${medals[i]||(i+1)}</div><div class="lb-name">${s.name}${s.uid===currentUser?.id?' 👈':''}</div><div class="lb-detail">${s.exact}🎯 ${s.correct}👍</div><div class="lb-pts">${s.total} <span>נק'</span></div></div>`).join('')}</div>`;
+  }catch(e){el.innerHTML='<div class="empty">שגיאה בטעינה</div>';}
+}
+
+const TOURNAMENT_LOCK=new Date('2025-04-30T20:00:00+03:00');
+
+// קבוצות: שם עברי → דגל
+const TEAMS_DATA=[
+  {he:'ארגנטינה',flag:'🇦🇷'},{he:'ברזיל',flag:'🇧🇷'},{he:'צרפת',flag:'🇫🇷'},{he:'אנגליה',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
+  {he:'גרמניה',flag:'🇩🇪'},{he:'ספרד',flag:'🇪🇸'},{he:'פורטוגל',flag:'🇵🇹'},{he:'הולנד',flag:'🇳🇱'},
+  {he:'בלגיה',flag:'🇧🇪'},{he:'קרואטיה',flag:'🇭🇷'},{he:'אורוגוואי',flag:'🇺🇾'},{he:'קולומביה',flag:'🇨🇴'},
+  {he:'מרוקו',flag:'🇲🇦'},{he:'יפן',flag:'🇯🇵'},{he:'ארה"ב',flag:'🇺🇸'},{he:'מקסיקו',flag:'🇲🇽'},
+  {he:'קנדה',flag:'🇨🇦'},{he:'שווייץ',flag:'🇨🇭'},{he:'נורווגיה',flag:'🇳🇴'},{he:'פולין',flag:'🇵🇱'},
+  {he:'טורקיה',flag:'🇹🇷'},{he:'אוסטרליה',flag:'🇦🇺'},{he:'סנגל',flag:'🇸🇳'},{he:'מצרים',flag:'🇪🇬'},
+  {he:'ניגריה',flag:'🇳🇬'},{he:'קוטה דיוואר',flag:'🇨🇮'},{he:'גאנה',flag:'🇬🇭'},{he:'קמרון',flag:'🇨🇲'},
+  {he:'דרום אפריקה',flag:'🇿🇦'},{he:'אקוודור',flag:'🇪🇨'},{he:'פרו',flag:'🇵🇪'},{he:"צ'ילה",flag:'🇨🇱'},
+  {he:'פנמה',flag:'🇵🇦'},{he:'ערב הסעודית',flag:'🇸🇦'},{he:'איראן',flag:'🇮🇷'},{he:'קוריאה',flag:'🇰🇷'},
+  {he:'עיראק',flag:'🇮🇶'},{he:'ירדן',flag:'🇯🇴'},{he:'קטר',flag:'🇶🇦'},{he:'ניו זילנד',flag:'🇳🇿'},
+  {he:'סקוטלנד',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'},{he:'האיטי',flag:'🇭🇹'},{he:'בוסניה',flag:'🇧🇦'},{he:'פרגוואי',flag:'🇵🇾'},
+];
+
+// שחקנים: שם עברי, תמונה (Wikipedia), קבוצה בעברית, API name לסנכרון עתידי
+const SCORERS_DATA=[
+  {he:'קיליאן מבאפה',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/2019-07-17_SEM_%2814%29_Kylian_Mbapp%C3%A9_%28cropped%29.jpg/120px-2019-07-17_SEM_%2814%29_Kylian_Mbapp%C3%A9_%28cropped%29.jpg',team:'צרפת',flag:'🇫🇷',en:'Kylian Mbappé'},
+  {he:'ארלינג האלאנד',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Haaland%2C_Erling_%282022%29.jpg/120px-Haaland%2C_Erling_%282022%29.jpg',team:'נורווגיה',flag:'🇳🇴',en:'Erling Haaland'},
+  {he:'ויניסיוס ז\'וניור',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/forty/Vinicius_Jr_2022_%28cropped%29.jpg/120px-Vinicius_Jr_2022_%28cropped%29.jpg',team:'ברזיל',flag:'🇧🇷',en:'Vinicius Jr.'},
+  {he:'ליאונל מסי',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg/120px-Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg',team:'ארגנטינה',flag:'🇦🇷',en:'Lionel Messi'},
+  {he:'כריסטיאנו רונאלדו',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Cristiano_Ronaldo_2018.jpg/120px-Cristiano_Ronaldo_2018.jpg',team:'פורטוגל',flag:'🇵🇹',en:'Cristiano Ronaldo'},
+  {he:'הארי קיין',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/England_v_Croatia_UEFA_Nations_League_-_Harry_Kane_%28cropped%29.jpg/120px-England_v_Croatia_UEFA_Nations_League_-_Harry_Kane_%28cropped%29.jpg',team:'אנגליה',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',en:'Harry Kane'},
+  {he:'לאוטרו מרטינס',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/20231015_AUT_ARG_0867_%28cropped%29.jpg/120px-20231015_AUT_ARG_0867_%28cropped%29.jpg',team:'ארגנטינה',flag:'🇦🇷',en:'Lautaro Martínez'},
+  {he:'רומלו לוקאקו',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Romelu_Lukaku_2018-06-13_1_%28cropped%29.jpg/120px-Romelu_Lukaku_2018-06-13_1_%28cropped%29.jpg',team:'בלגיה',flag:'🇧🇪',en:'Romelu Lukaku'},
+  {he:'אנטואן גריזמן',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Antoine_Griezmann_2018.jpg/120px-Antoine_Griezmann_2018.jpg',team:'צרפת',flag:'🇫🇷',en:'Antoine Griezmann'},
+  {he:'בוקאיו סאקה',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Bukayo_Saka_2022_FIFA_WC.jpg/120px-Bukayo_Saka_2022_FIFA_WC.jpg',team:'אנגליה',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',en:'Bukayo Saka'},
+  {he:'פיל פודן',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Phil_Foden_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Phil_Foden_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'אנגליה',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',en:'Phil Foden'},
+  {he:'ג\'וד בלינגהאם',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Jude_Bellingham_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Jude_Bellingham_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'אנגליה',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',en:'Jude Bellingham'},
+  {he:'פדרי',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Pedri_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Pedri_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'ספרד',flag:'🇪🇸',en:'Pedri'},
+  {he:'למין יאמאל',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Lamine_Yamal_Euro_2024_%28cropped%29.jpg/120px-Lamine_Yamal_Euro_2024_%28cropped%29.jpg',team:'ספרד',flag:'🇪🇸',en:'Lamine Yamal'},
+  {he:'פדריקו ולברדה',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/20231015_AUT_URU_0619_%28cropped%29.jpg/120px-20231015_AUT_URU_0619_%28cropped%29.jpg',team:'אורוגוואי',flag:'🇺🇾',en:'Federico Valverde'},
+  {he:'אלבארו מוראטה',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/%C3%81lvaro_Morata_2018.jpg/120px-%C3%81lvaro_Morata_2018.jpg',team:'ספרד',flag:'🇪🇸',en:'Álvaro Morata'},
+  {he:'ממפיס דפאי',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Memphis_Depay_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Memphis_Depay_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'הולנד',flag:'🇳🇱',en:'Memphis Depay'},
+  {he:'קודי גאקפו',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Cody_Gakpo_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Cody_Gakpo_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'הולנד',flag:'🇳🇱',en:'Cody Gakpo'},
+  {he:'דושאן ולאהוביץ',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Dusan_Vlahovic_2022.jpg/120px-Dusan_Vlahovic_2022.jpg',team:'סרביה',flag:'🇷🇸',en:'Dusan Vlahovic'},
+  {he:'יאמאל מוסיאלה',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Jamal_Musiala_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Jamal_Musiala_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'גרמניה',flag:'🇩🇪',en:'Jamal Musiala'},
+  {he:'פלוריאן וירץ',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/20231014_GER_USA_1066_%28cropped%29.jpg/120px-20231014_GER_USA_1066_%28cropped%29.jpg',team:'גרמניה',flag:'🇩🇪',en:'Florian Wirtz'},
+  {he:'קאי האברץ',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Kai_Havertz_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Kai_Havertz_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'גרמניה',flag:'🇩🇪',en:'Kai Havertz'},
+  {he:'רפאל לאו',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Rafael_Le%C3%A3o_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Rafael_Le%C3%A3o_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'פורטוגל',flag:'🇵🇹',en:'Rafael Leão'},
+  {he:'ברונו פרננדש',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Bruno_Fernandes_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Bruno_Fernandes_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'פורטוגל',flag:'🇵🇹',en:'Bruno Fernandes'},
+  {he:'גונסאלו ראמוס',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Gon%C3%A7alo_Ramos_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Gon%C3%A7alo_Ramos_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'פורטוגל',flag:'🇵🇹',en:'Gonçalo Ramos'},
+  {he:'ריצ\'ארליסון',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Richarlison_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Richarlison_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'ברזיל',flag:'🇧🇷',en:'Richarlison'},
+  {he:'רודריגו',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Rodrygo_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Rodrygo_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'ברזיל',flag:'🇧🇷',en:'Rodrygo'},
+  {he:'גבריאל מרטינלי',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Gabriel_Martinelli_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Gabriel_Martinelli_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'ברזיל',flag:'🇧🇷',en:'Gabriel Martinelli'},
+  {he:'רוברט לבנדובסקי',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Robert_Lewandowski_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Robert_Lewandowski_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'פולין',flag:'🇵🇱',en:'Robert Lewandowski'},
+  {he:'מרטין אודגור',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Martin_%C3%98degaard_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Martin_%C3%98degaard_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'נורווגיה',flag:'🇳🇴',en:'Martin Ødegaard'},
+  {he:'האקאן צ\'לחאנאוגלו',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Hakan_%C3%87alhano%C4%9Flu_2022_FIFA_World_Cup_%28cropped%29.jpg/120px-Hakan_%C3%87alhano%C4%9Flu_2022_FIFA_World_Cup_%28cropped%29.jpg',team:'טורקיה',flag:'🇹🇷',en:'Hakan Çalhanoğlu'},
+  {he:'אחר',img:'',team:'',flag:'',en:'אחר'},
+];
+// מפה מאנגלית לעברית לסנכרון עם API
+const SCORER_EN_TO_HE={};SCORERS_DATA.forEach(s=>{if(s.en&&s.en!=='אחר')SCORER_EN_TO_HE[s.en]=s.he;});
+
+async function loadTournamentPred(){if(!currentUser)return{};try{const data=await sbFetch('tournament_predictions?user_id=eq.'+currentUser.id+'&select=*');return data?.[0]||{};}catch(e){return{};}}
+async function saveTournamentPred(field,value){
+  if(!currentUser)return;if(new Date()>=TOURNAMENT_LOCK){toast('🔒 הניחושים ננעלו!');return;}
+  try{const existing=await loadTournamentPred();const payload={user_id:currentUser.id,[field]:value,updated_at:new Date().toISOString()};if(existing.id){await sbFetch('tournament_predictions?id=eq.'+existing.id,{method:'PATCH',body:JSON.stringify(payload)});}else{await sbFetch('tournament_predictions',{method:'POST',body:JSON.stringify(payload)});}toast('✅ נשמר!');}catch(e){toast('❌ '+e.message);}
+}
+async function getPlayerImg(nameEn){
+  if(!nameEn||nameEn==='אחר')return'';
+  try{
+    const r=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(nameEn)}`);
+    const d=await r.json();
+    return d.thumbnail?.source||'';
+  }catch(e){return'';}
+}
+async function tournamentPickedCard(type,value){
+  if(!value)return'';
+  if(type==='champion'){
+    const t=TEAMS_DATA.find(x=>x.he===value);
+    if(!t)return`<div style="margin-top:10px;padding:10px 14px;background:rgba(74,222,128,.08);border-radius:12px;font-size:.9rem;color:var(--green)">✅ הניחוש שלך: ${value}</div>`;
+    return`<div style="margin-top:10px;display:flex;align-items:center;gap:12px;background:rgba(74,222,128,.08);border-radius:14px;padding:12px 16px"><span style="font-size:2.5rem">${t.flag}</span><div><div style="font-weight:900;font-size:1rem;color:var(--green)">${t.he}</div><div style="font-size:.75rem;color:var(--muted2)">✅ הניחוש שלך לאלופה</div></div></div>`;
+  }else{
+    const s=SCORERS_DATA.find(x=>x.he===value);
+    if(!s)return`<div style="margin-top:10px;padding:10px 14px;background:rgba(74,222,128,.08);border-radius:12px;font-size:.9rem;color:var(--green)">✅ הניחוש שלך: ${value}</div>`;
+    const imgUrl=await getPlayerImg(s.en);
+    const imgHtml=imgUrl
+      ?`<img src="${imgUrl}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--green2);flex-shrink:0">`
+      :`<div style="width:56px;height:56px;border-radius:50%;background:var(--card2);border:2px solid var(--green2);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${s.flag}</div>`;
+    return`<div style="margin-top:10px;display:flex;align-items:center;gap:12px;background:rgba(74,222,128,.08);border-radius:14px;padding:12px 16px">${imgHtml}<div><div style="font-weight:900;font-size:1rem;color:var(--green)">${s.flag} ${s.he}</div><div style="font-size:.75rem;color:var(--muted2)">${s.team} · ✅ הניחוש שלך למלך השערים</div></div></div>`;
+  }
+}
+async function renderTournamentPreds(){
+  const el=document.getElementById('tournament-preds-content'),lockEl=document.getElementById('tournament-lock-info');
+  const now=new Date(),isLocked=now>=TOURNAMENT_LOCK,minsLeft=Math.floor((TOURNAMENT_LOCK-now)/60000);
+  if(isLocked){lockEl.innerHTML='🔒 הניחושים ננעלו — הטורניר התחיל';lockEl.style.color='var(--red)';}
+  else if(minsLeft<60){lockEl.innerHTML=`⏱ נסגר בעוד ${minsLeft} דקות!`;lockEl.style.color='var(--red)';}
+  else lockEl.innerHTML=`⏱ נסגר בעוד ${Math.floor(minsLeft/1440)} ימים, ${Math.floor((minsLeft%1440)/60)} שעות`;
+  const pred=await loadTournamentPred();
+  // תרגום מאנגלית לעברית אם נשמר ישן
+  if(pred.champion&&!TEAMS_DATA.find(t=>t.he===pred.champion)){const found=Object.entries(TEAM_HE).find(([en])=>en===pred.champion);if(found)pred.champion=found[1];}
+  if(pred.top_scorer&&SCORER_EN_TO_HE[pred.top_scorer])pred.top_scorer=SCORER_EN_TO_HE[pred.top_scorer];
+  el.innerHTML=`
+    <div class="match-card" style="margin-bottom:12px">
+      <div class="match-meta"><span>🏆 אלופת ליגת האלופות</span><span style="color:var(--green);font-size:.75rem">15 נק' לניחוש נכון</span></div>
+      <div style="padding:12px 14px">
+        <select style="width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;color:var(--text);font-family:'Heebo',sans-serif;font-size:.95rem;outline:none" onchange="onChampionChange(this.value)" ${isLocked?'disabled':''}>
+          <option value="">— בחר קבוצה —</option>
+          ${TEAMS_DATA.map(t=>`<option value="${t.he}" ${pred.champion===t.he?'selected':''}>${t.flag} ${t.he}</option>`).join('')}
+        </select>
+        <div id="champion-card">${await tournamentPickedCard('champion',pred.champion)}</div>
+      </div>
+    </div>
+    <div class="match-card">
+      <div class="match-meta"><span>⚽ מלך השערים</span><span style="color:var(--green);font-size:.75rem">15 נק' לניחוש נכון</span></div>
+      <div style="padding:12px 14px">
+        <select style="width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;color:var(--text);font-family:'Heebo',sans-serif;font-size:.95rem;outline:none" onchange="onScorerChange(this.value)" ${isLocked?'disabled':''}>
+          <option value="">— בחר שחקן —</option>
+          ${SCORERS_DATA.map(s=>`<option value="${s.he}" ${pred.top_scorer===s.he?'selected':''}>${s.flag} ${s.he}${s.team?' · '+s.team:''}</option>`).join('')}
+        </select>
+        <div id="scorer-card">${await tournamentPickedCard('scorer',pred.top_scorer)}</div>
+      </div>
+    </div>`;
+}
+async function onChampionChange(v){
+  document.getElementById('champion-card').innerHTML=await tournamentPickedCard('champion',v);
+  await saveTournamentPred('champion',v);
+}
+async function onScorerChange(v){
+  document.getElementById('scorer-card').innerHTML=await tournamentPickedCard('scorer',v);
+  await saveTournamentPred('top_scorer',v);
+}
+async function renderScorers(){
+  const el=document.getElementById('scorers-content');el.innerHTML='<div class="loader"><div class="spinner"></div>טוען...</div>';
+  try{const data=await sbFetch('top_scorers?order=goals.desc&limit=30');
+    if(!data||!data.length){el.innerHTML='<div class="empty"><div class="icon">⚽</div>נתוני מבקיעים יופיעו כשיתחיל הטורניר</div>';return;}
+    const medals=['🥇','🥈','🥉'],cls=['g','s','b'];
+    el.innerHTML=`<div class="lb"><div class="lb-head">⚽ טבלת מבקיעים — ליגת האלופות 2024/25</div>${data.map((s,i)=>`<div class="lb-row"><div class="lb-rank ${cls[i]||''}">${medals[i]||(i+1)}</div><div style="font-size:1.2rem">${s.flag||FLAGS_BY_NAME[s.team]||'🏳️'}</div><div class="lb-name">${s.player_name}</div><div class="lb-detail">${teamName(s.team)}</div><div class="lb-pts">${s.goals} <span>שערים</span></div></div>`).join('')}</div>`;
+  }catch(e){el.innerHTML='<div class="empty"><div class="icon">⚽</div>נתוני מבקיעים יופיעו כשיתחיל הטורניר</div>';}
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['predict','results','leagues','lb','global','tournament','scorers'][i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='results')renderResults();if(t==='leagues')renderLeagues();if(t==='lb')renderLB();
+  if(t==='global')renderGlobalLB();if(t==='tournament')renderTournamentPreds();if(t==='scorers')renderScorers();
+}
+function showScreen(s){
+  document.querySelectorAll('.screen').forEach(el=>{el.classList.remove('active');el.style.display='none';});
+  const el=document.getElementById('screen-'+s);el.classList.add('active');el.style.display=s==='auth'?'flex':'block';
+}
+function openModal(id){document.getElementById('modal-'+id).classList.add('open');}
+function closeModal(id){document.getElementById('modal-'+id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+
+async function initApp(){
+  document.getElementById('predict-list').innerHTML='<div class="loader"><div class="spinner"></div>טוען משחקים...</div>';
+  await fetchMatches();renderPredict();
+  await loadMyPredictions();await loadMyLeagues();renderPredict();
+  checkInviteLink();
+  setInterval(async()=>{await autofillBot();await Promise.all([fetchMatches(),loadMyPredictions()]);renderPredict();if(document.getElementById('panel-results').classList.contains('active'))renderResults();},30000);
+}
+</script>
+</body>
+</html>
