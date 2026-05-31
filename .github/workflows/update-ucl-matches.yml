@@ -40,13 +40,19 @@ jobs:
               'Prefer': 'resolution=merge-duplicates,return=minimal'
           }
 
+          def prediction_scores(score):
+              """ניחושי משחק בנוקאאוט — תוצאת 90 דקות (regularTime), לא הארכה/פנדלים."""
+              rt = score.get('regularTime') or {}
+              ft = score.get('fullTime') or {}
+              if rt.get('home') is not None and rt.get('away') is not None:
+                  return rt.get('home'), rt.get('away')
+              return ft.get('home'), ft.get('away')
+
           for m in matches:
               stage = m.get('stage', '')
               group = m.get('group') or None
               score = m.get('score', {})
-              ft = score.get('fullTime', {})
-              home_score = ft.get('home')
-              away_score = ft.get('away')
+              home_score, away_score = prediction_scores(score)
 
               # תיקון סטטוס
               status = m.get('status', '')
