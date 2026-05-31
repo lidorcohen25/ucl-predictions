@@ -323,6 +323,21 @@ function scoreResultLabel(m){
   if(d==='EXTRA_TIME')return'אחרי 90 דק׳ · הארכה';
   return'אחרי 90 דק׳';
 }
+function formatMatchScore(m,sc){
+  return`${teamName(m.homeTeam.name)} ${sc.h}–${sc.a} ${teamName(m.awayTeam.name)}`;
+}
+// תיקון ידני כש-Supabase עדיין מכיל fullTime (הארכה/פנדלים) במקום 90 דקות
+const KNOCKOUT_SCORE_FIXES={
+  552096:{h:1,a:1,duration:'PENALTY_SHOOTOUT',winner:'Paris Saint-Germain FC'},
+};
+function applyKnockoutScoreFixes(){
+  allMatches.forEach(m=>{
+    const fix=KNOCKOUT_SCORE_FIXES[m.id];
+    if(!fix)return;
+    m.score={fullTime:{home:fix.h,away:fix.a},duration:fix.duration};
+    if(m.stage==='FINAL'&&fix.winner)finalWinnerEn=fix.winner;
+  });
+}
 const FLAGS={MEX:'🇲🇽',KOR:'🇰🇷',RSA:'🇿🇦',CZE:'🇨🇿',CAN:'🇨🇦',USA:'🇺🇸',AUS:'🇦🇺',TUR:'🇹🇷',BRA:'🇧🇷',MAR:'🇲🇦',GER:'🇩🇪',ECU:'🇪🇨',NED:'🇳🇱',JPN:'🇯🇵',ESP:'🇪🇸',KSA:'🇸🇦',URU:'🇺🇾',BEL:'🇧🇪',IRN:'🇮🇷',FRA:'🇫🇷',SEN:'🇸🇳',NOR:'🇳🇴',ARG:'🇦🇷',AUT:'🇦🇹',POR:'🇵🇹',COL:'🇨🇴',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦',CHI:'🇨🇱',PER:'🇵🇪',POL:'🇵🇱',SUI:'🇨🇭',QAT:'🇶🇦',EGY:'🇪🇬',IRQ:'🇮🇶',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',WAL:'🏴󠁧󠁢󠁷󠁬󠁳󠁿',NZL:'🇳🇿',SLO:'🇸🇮',SVK:'🇸🇰',HUN:'🇭🇺',ROU:'🇷🇴',SRB:'🇷🇸',UKR:'🇺🇦',ALB:'🇦🇱',GEO:'🇬🇪',TUN:'🇹🇳',CMR:'🇨🇲',CIV:'🇨🇮',NGA:'🇳🇬',HAI:'🇭🇹',VEN:'🇻🇪',BOL:'🇧🇴',PAR:'🇵🇾',HND:'🇭🇳',CRC:'🇨🇷',JAM:'🇯🇲',SLV:'🇸🇻',TRI:'🇹🇹',BIH:'🇧🇦',MKD:'🇲🇰',SVN:'🇸🇮',IDN:'🇮🇩',THA:'🇹🇭',VNM:'🇻🇳',PHI:'🇵🇭',IND:'🇮🇳',CHN:'🇨🇳',OMA:'🇴🇲',BHR:'🇧🇭',JOR:'🇯🇴',LBN:'🇱🇧',SYR:'🇸🇾',YEM:'🇾🇪',KWT:'🇰🇼',UAE:'🇦🇪',TKM:'🇹🇲',UZB:'🇺🇿',KAZ:'🇰🇿',KGZ:'🇰🇬',TJK:'🇹🇯',
   // UCL clubs TLA
   RMA:'🇪🇸',ARS:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',FCB:'🇩🇪',BAY:'🇩🇪',MUN:'🇩🇪',INT:'🇮🇹',PSG:'🇫🇷',AVL:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',BVB:'🇩🇪',BAR:'🇪🇸',ATM:'🇪🇸',ATL:'🇪🇸',MAD:'🇪🇸',LIV:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',FCO:'🇵🇹',SLB:'🇵🇹',MCI:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CHE:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',JUV:'🇮🇹',ACM:'🇮🇹',SPO:'🇵🇹',B04:'🇩🇪',VFB:'🇩🇪',PSV:'🇳🇱',RBL:'🇩🇪',MCO:'🇲🇨',GIR:'🇪🇸',FEY:'🇳🇱',CLT:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',CLU:'🇧🇪',YB:'🇨🇭',BOL:'🇮🇹',STU:'🇦🇹',SHA:'🇺🇦',BRE:'🇫🇷',DIN:'🇭🇷',
@@ -471,7 +486,9 @@ async function fetchMatches(){
     const r=await sbFetch('matches?order=utc_date');
     if(r&&r.length>0){
       allMatches=r.map(m=>({id:m.match_id,utcDate:m.utc_date,status:m.status,stage:m.stage,group:m.group_name,homeTeam:{name:m.home_team||'טרם נקבע',shortName:m.home_team||'טרם נקבע',tla:m.home_tla},awayTeam:{name:m.away_team||'טרם נקבע',shortName:m.away_team||'טרם נקבע',tla:m.away_tla},score:{fullTime:{home:m.home_score,away:m.away_score}}}));
+      applyKnockoutScoreFixes();
       await enrichFinishedKnockoutFromApi();
+      applyKnockoutScoreFixes();
       console.log('matches:',allMatches.length);
       syncStagesToCurrent();
     }
@@ -628,7 +645,7 @@ function renderPredict(){
             <span class="team-flag">${teamBadge(m.homeTeam.tla,m.homeTeam.name)}</span>
           </div>
           <div style="text-align:center;min-width:90px">
-            ${hasSaved?`<div style="font-size:.62rem;color:var(--muted2);margin-bottom:4px">הניחוש שלך</div><div style="font-size:1.8rem;font-weight:900;color:var(--green);letter-spacing:2px;line-height:1">${saved.home_goals} – ${saved.away_goals}</div><div style="font-size:.75rem;font-weight:700;color:var(--muted2);margin-top:6px;padding-top:4px;border-top:1px solid rgba(255,255,255,.1)">${score.h}–${score.a} <span style="font-size:.62rem;font-weight:400">${scoreResultLabel(m)}</span></div>`:`<div style="font-size:1.8rem;font-weight:900;color:var(--text);letter-spacing:2px;line-height:1">${score.h} – ${score.a}</div><div style="font-size:.65rem;color:var(--muted2);margin-top:2px">${scoreResultLabel(m)}</div>`}
+            ${hasSaved?`<div style="font-size:.62rem;color:var(--muted2);margin-bottom:4px">הניחוש שלך</div><div style="font-size:1.8rem;font-weight:900;color:var(--green);letter-spacing:2px;line-height:1">${saved.home_goals} – ${saved.away_goals}</div><div style="font-size:.75rem;font-weight:700;color:var(--muted2);margin-top:6px;padding-top:4px;border-top:1px solid rgba(255,255,255,.1)">${formatMatchScore(m,score)} <span style="font-size:.62rem;font-weight:400">· ${scoreResultLabel(m)}</span></div>`:`<div style="font-size:1.8rem;font-weight:900;color:var(--text);letter-spacing:2px;line-height:1">${formatMatchScore(m,score)}</div><div style="font-size:.65rem;color:var(--muted2);margin-top:2px">${scoreResultLabel(m)}</div>`}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-start">
             <span class="team-flag">${teamBadge(m.awayTeam.tla,m.awayTeam.name)}</span>
@@ -713,7 +730,7 @@ async function renderResults(){
     const ptsCalc=saved?calcPts({h:saved.home_goals,a:saved.away_goals},sc,m.stage):null;
     html+=`<div class="match-card ${m.status==='IN_PLAY'?'live':'finished'}" onclick="${ptsCalc?`showPtsAnimation(${ptsCalc.pts},'${ptsCalc.tag}')`:''}" style="cursor:${ptsCalc?'pointer':'default'};${ptsCalc?.tag==='exact'?'border-color:var(--green2);box-shadow:0 0 20px rgba(74,222,128,.2)':ptsCalc?.tag==='correct'?'border-color:var(--gold);box-shadow:0 0 16px rgba(251,191,36,.15)':ptsCalc?.tag==='wrong'?'border-color:var(--red);box-shadow:0 0 16px rgba(244,63,94,.15)':''}">
       ${ptsCalc?`<div class="result-ribbon ${ptsCalc.tag}">${ptsCalc.label}</div>`:'<div class="result-ribbon pending">לא ניחשת</div>'}
-      <div class="match-meta" style="padding-top:28px"><span>${fmtDate(m.utcDate)}</span><span><b style="color:var(--green)">${sc.h}:${sc.a}</b> <span style="font-size:.65rem;color:var(--muted2);font-weight:600">${scoreResultLabel(m)}</span></span></div>
+      <div class="match-meta" style="padding-top:28px"><span>${fmtDate(m.utcDate)}</span><span><b style="color:var(--green)">${formatMatchScore(m,sc)}</b> <span style="font-size:.65rem;color:var(--muted2);font-weight:600">· ${scoreResultLabel(m)}</span></span></div>
       <div class="match-body">
         <div class="team"><span class="team-flag">${teamBadge(m.homeTeam.tla,m.homeTeam.name)}</span><span class="team-name">${teamName(m.homeTeam.name)}</span></div>
         <div class="score-area"><div class="score-box" style="${ptsCalc?.tag==='exact'?'border-color:var(--green2);color:var(--green)':''}">${sc.h}</div><span class="vs-sep">VS</span><div class="score-box" style="${ptsCalc?.tag==='exact'?'border-color:var(--green2);color:var(--green)':''}">${sc.a}</div></div>
